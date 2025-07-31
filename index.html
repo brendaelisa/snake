@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Snake con Vidas</title>
+  <link rel="icon" href="data:," />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      font-family: 'Poppins', sans-serif;
+      color: #0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      padding-top: 20px;
+    }
+
+    #hud {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    canvas {
+      background-color: #1a1a1a;
+      border: 4px solid #0f0;
+      box-shadow: 0 0 15px #0f0;
+    }
+
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .controls button {
+      background: #0f0;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      font-size: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 8px #0f0;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+
+    #gameOverScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      color: #0f0;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    #gameOverScreen h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+
+    #gameOverScreen p {
+      font-size: 18px;
+      color: #ccc;
+    }
+
+    #gameOverScreen button {
+      margin-top: 20px;
+      background: #0f0;
+      color: #000;
+      padding: 10px 20px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div id="score">Puntuación: 0</div>
+    <div id="lives">Vidas: ❤️❤️❤️</div>
+  </div>
+
+  <canvas id="game" width="300" height="300"></canvas>
+
+  <!-- Controles para móvil -->
+  <div class="controls">
+    <button onclick="setDirection('up')">⬆️</button>
+    <div class="row">
+      <button onclick="setDirection('left')">⬅️</button>
+      <button onclick="setDirection('right')">➡️</button>
+    </div>
+    <button onclick="setDirection('down')">⬇️</button>
+  </div>
+
+  <!-- Game Over -->
+  <div id="gameOverScreen">
+    <h1>🛑 Game Over</h1>
+    <div id="finalScore"></div>
+    <p id="finalVerse"></p>
+    <button onclick="location.reload()">Jugar de nuevo</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('score');
+    const livesDisplay = document.getElementById('lives');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const finalScore = document.getElementById('finalScore');
+    const finalVerse = document.getElementById('finalVerse');
+
+    const box = 15;
+    let snake = [{ x: 5 * box, y: 5 * box }];
+    let food = randomFood();
+    let direction = 'right';
+    let score = 0;
+    let lives = 3;
+    let playing = true;
+
+    const verses = [
+      "“Todo lo puedo en Cristo que me fortalece.” – Filipenses 4:13",
+      "“Esfuérzate y sé valiente.” – Josué 1:9",
+      "“Jehová es mi pastor; nada me faltará.” – Salmo 23:1"
+    ];
+
+    function randomFood() {
+      return {
+        x: Math.floor(Math.random() * 20) * box,
+        y: Math.floor(Math.random() * 20) * box
+      };
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp' && direction !== 'down') direction = 'up';
+      else if (e.key === 'ArrowDown' && direction !== 'up') direction = 'down';
+      else if (e.key === 'ArrowLeft' && direction !== 'right') direction = 'left';
+      else if (e.key === 'ArrowRight' && direction !== 'left') direction = 'right';
+    });
+
+    function setDirection(dir) {
+      if (dir === 'up' && direction !== 'down') direction = 'up';
+      else if (dir === 'down' && direction !== 'up') direction = 'down';
+      else if (dir === 'left' && direction !== 'right') direction = 'left';
+      else if (dir === 'right' && direction !== 'left') direction = 'right';
+    }
+
+    function loseLife() {
+      lives--;
+      updateHUD();
+      if (lives <= 0) {
+        showGameOver();
+      } else {
+        snake = [{ x: 5 * box, y: 5 * box }];
+        direction = 'right';
+      }
+    }
+
+    function updateHUD() {
+      scoreDisplay.textContent = 'Puntuación: ' + score;
+      livesDisplay.textContent = 'Vidas: ' + '❤️'.repeat(lives);
+    }
+
+    function showGameOver() {
+      playing = false;
+      finalScore.textContent = 'Puntuación final: ' + score;
+      finalVerse.textContent = verses[Math.floor(Math.random() * verses.length)];
+      gameOverScreen.style.display = 'flex';
+    }
+
+    function draw() {
+      if (!playing) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Dibujar comida
+      ctx.fillStyle = 'red';
+      ctx.fillRect(food.x, food.y, box, box);
+
+      // Dibujar serpiente
+      for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? '#0f0' : '#0a0';
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+      }
+
+      // Movimiento
+      let head = { ...snake[0] };
+      if (direction === 'up') head.y -= box;
+      if (direction === 'down') head.y += box;
+      if (direction === 'left') head.x -= box;
+      if (direction === 'right') head.x += box;
+
+      // Colisiones
+      if (
+        head.x < 0 || head.x >= canvas.width ||
+        head.y < 0 || head.y >= canvas.height ||
+        snake.slice(1).some(seg => seg.x === head.x && seg.y === head.y)
+      ) {
+        loseLife();
+        return;
+      }
+
+      // Comer comida
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        food = randomFood();
+        updateHUD();
+      } else {
+        snake.pop();
+      }
+
+      snake.unshift(head);
+    }
+
+    updateHUD();
+    setInterval(draw, 250); // 🔽 Velocidad más lenta
+  </script>
+</body>
+</html>
